@@ -3,16 +3,15 @@
     <table class="au-grid">
         <thead>
             <th repeat.for="header of model.headers"
-                header.bind="header"
                 innerHTML.bind="header.title"
-                click.delegate="$parent.sort(header.field, $index)">
+                click.delegate="$parent.sort(header)"
+                class.bind="header.sort">
             </th>
         </thead>
         <tbody>
             <tr repeat.for="row of model.rows">
                 <td repeat.for="cell of $parent.model.cells"
-                    cell.bind="cell"
-                    innerHTML.bind="$parent.$parent.generateCell(cell, $parent.row)">
+                    innerHTML.bind="$parent.$parent.getCell(cell, $parent.row)">
                 </td>
             </tr>
         </tbody>

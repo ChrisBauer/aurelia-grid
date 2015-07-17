@@ -31,7 +31,7 @@ export class Utils {
             }
         }
 
-        var sorted = (Utils.sort(less)).concat([val], Utils.sort(more));
+        var sorted = (Utils.sort(less, comparatorFn)).concat([val], Utils.sort(more, comparatorFn));
         return sorted;
     }
 }

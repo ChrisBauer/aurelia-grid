@@ -1,39 +1,50 @@
-import {inject, bindable} from 'aurelia-framework';
+import {ViewCompiler, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
+import {CellRenderer} from 'grid/cell-renderer';
 import {Utils} from 'grid/utils';
 // import {Compiler} from 'gooy/aurelia-compiler';
 
 
 const ASC = -1;
 const DESC = 1;
-const DEFAULT_CELL_TEMPLATE = 'row[cell.field]';
+const DEFAULT_CELL_TEMPLATE = '<span>${row[cell.field]}</span>';
 
-@inject(Element) //, Compiler)
+@inject(Element, CellRenderer, ObserverLocator)
 @bindable('config')
-@bindable('dataModel')
+@bindable({
+    name: 'dataModel',
+    defaultValue: []
+})
 export class AureliaGrid {
 
-    constructor(Element) { //, Compiler) {
+    constructor(Element, CellRenderer, ObserverLocator) {
         this.element = Element;
-        //this.compiler = Compiler;
-        // this.compile = function (htmlString, cell) {
-        //     var elements = this.compiler.createFragment(htmlString).children[0];
-        //     return this.compiler.compile(elements, cell);
-        // };
-        //this.compile = (htmlString => this.compiler.compile(Utils.createElement(htmlString)));
+        this.ObserverLocator = ObserverLocator;
+        this.CellRenderer = CellRenderer;
+
+        this.nextRowIndex = 0;
+        this.cellLookup = {};
     }
 
-    sort (field, index) {
-        let header = this.model.headers[index];
+    sort (sortHeader) {
+        this.inSort = true;
+        let index = sortHeader.index;
+        let field = sortHeader.field;
 
-        this.model.rows = Utils.sort(this.model.rows, function (a, b) {
+        for(let header of this.model.headers) {
+            if (header.index !== sortHeader.index) {
+                delete header.sort;
+            }
+        }
+
+        this.model.rows = this.model.rows.sort(function (a, b) {
             return a[field] > b[field] ? 1 : -1;
         });
 
-        header.sort === ASC ?
-            header.sort = DESC :
-            header.sort = ASC;
+        sortHeader.sort === ASC ?
+            sortHeader.sort = DESC :
+            sortHeader.sort = ASC;
 
-        if (header.sort === DESC) {
+        if (sortHeader.sort === DESC) {
             this.model.rows.reverse();
         }
     }
@@ -50,45 +61,42 @@ export class AureliaGrid {
         return Utils.merge({
             index: index,
             title: configEntry.field.toUpperCase(),
-            field: configEntry.field
+            field: configEntry.field,
+            sortBy: configEntry.field
         }, configEntry.header);
     }
 
-    generateRow(row) {
-        let g = {};
-
-
+    initRow(row) {
+        row.key = this.nextRowIndex;
+        this.cellLookup[this.nextRowIndex++] = {};
     }
 
-    generateCell(cell, row) {
-        // would only render once, rather than once per row
-        // if (cell.evaluated) {
-        //     return cell.evaluated;
-        // }
-
-        if (cell.template === DEFAULT_CELL_TEMPLATE) {
-            return cell.evaluated = eval(cell.template);
+    getCell(cell, row) {
+        if (!this.inSort) {
+            var lookup = this.cellLookup[row.key][cell.index];
+            if (lookup) {
+                return lookup;
+            }
+            else {
+                this.cellLookup[row.key][cell.index] = this.CellRenderer.renderCell(cell, row);
+                return this.cellLookup[row.key][cell.index];
+            }
         }
         else {
-            return cell.evaluated = eval(this.getMappedTemplate(cell));
+            var round = Math.floor(this.sortSpliceCount++ / this.model.cells.length);
+            row = this.model.rows[this.spliceMap[round]];
+            var lookup = this.cellLookup[row.key][cell.index];
+            if (lookup) {
+                return lookup;
+            }
+            else {
+                this.cellLookup[row.key][cell.index] = this.CellRenderer.renderCell(cell, row);
+                return this.cellLookup[row.key][cell.index];
+            }
         }
-
-        // if (cell.template === DEFAULT_CELL_TEMPLATE) {
-        //     return cell.evaluated = this.compile(cell.template, cell);
-        // }
-        // else {
-        //     return cell.evaluated = this.compile(this.getMappedTemplate(cell), cell);
-        // }
-    }
-
-    getMappedTemplate (cell) {
-        return cell.template
-            .replace(/\$field/g, DEFAULT_CELL_TEMPLATE)
-            .replace(/\$row/g, 'row');
     }
 
     attached () {
-
         this.model = {
             headers: [],
             cells: [],
@@ -99,9 +107,56 @@ export class AureliaGrid {
             this.model.headers.push(this.createHeader(configEntry, i));
             this.model.cells.push(this.createCell(configEntry, i++));
         }
-        // for (let row of this.dataModel) {
-        //     this.model.rows.push(this.generateRow(row));
-        // }
+
+        for (let row of this.dataModel) {
+            this.initRow(row);
+        }
         this.model.rows = this.dataModel;
+
+        // this attached() gets called before the repeat.for, so it would normally
+        // be the second callback. Since we want to generate the key data first,
+        // we need to have this be the first callback run. Since Aurelia runs
+        // the callbacks in the reverse order of subscription, we need to
+        // have a timeout to make sure that it is the last subscription
+        setTimeout( () => {
+            var self = this;
+            this.ObserverLocator.getArrayObserver(this.model.rows)
+            .subscribe((splices) => {
+                if (this.inSort) {
+                    this.sortSpliceCount = 0;
+                    this.spliceMap = this.generateSpliceMap(splices);
+                }
+                else {
+                    for(let splice of splices) {
+                        var addedCount = splice.addedCount
+                        while (addedCount-- > 0) {
+                            self.initRow(self.model.rows[splice.index + addedCount]);
+                        }
+                    }
+                }
+            });
+        });
+        this.ObserverLocator.getArrayObserver(this.model.rows)
+        .subscribe(() => {
+            if (this.inSort) {
+                this.sortSpliceCount = 0;
+                this.inSort = false;
+                this.spliceMap = null
+            }
+        });
+    }
+
+    generateSpliceMap(splices) {
+        var map = [];
+        for (let splice of splices) {
+            for (var i = 0; i < splice.addedCount; i++){
+                map.push(splice.index + i);
+            }
+        }
+        return map;
+    }
+
+    dataModelChanged () {
+        console.log(arguments);
     }
 }
