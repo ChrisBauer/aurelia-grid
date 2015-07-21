@@ -7,6 +7,8 @@ var sourcemaps = require('gulp-sourcemaps');
 var paths = require('../paths');
 var compilerOptions = require('../babel-options');
 var assign = Object.assign || require('object.assign');
+var lessCompile = require('gulp-less');
+var autoprefixer = require('gulp-autoprefixer');
 
 // transpiles changed es6 files to SystemJS format
 // the plumber() call prevents 'pipe breaking' caused
@@ -29,6 +31,13 @@ gulp.task('build-html', function () {
     .pipe(gulp.dest(paths.output));
 });
 
+gulp.task('compile-less', function () {
+    return gulp.src(paths.style)
+        .pipe(lessCompile())
+        .pipe(autoprefixer())
+        .pipe(gulp.dest(paths.output + '/css'))
+});
+
 // this task calls the clean task (located
 // in ./clean.js), then runs the build-system
 // and build-html tasks in parallel
@@ -36,7 +45,7 @@ gulp.task('build-html', function () {
 gulp.task('build', function(callback) {
   return runSequence(
     'clean',
-    ['build-system', 'build-html'],
+    ['build-system', 'build-html', 'compile-less'],
     callback
   );
 });

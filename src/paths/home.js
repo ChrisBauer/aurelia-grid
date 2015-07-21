@@ -1,6 +1,5 @@
 export class Home {
     constructor (ViewCompiler, resources, Container) {
-        this.text = 'hello world';
         this.sampleConfig = [
             {
                 field: 'name',
@@ -11,7 +10,8 @@ export class Home {
             {
                 field: 'dob',
                 header: {
-                    title: 'Date of Birth'
+                    title: 'Date of Birth',
+                    draggable: true
                 }
             },
             {
@@ -19,8 +19,9 @@ export class Home {
                 header: {
                     title: 'Test',
                     sortBy: function (a, b) {
-                        return a.length > b.length;
-                    }
+                        return a.test.length > b.test.length;
+                    },
+                    draggable: true
                 },
                 cell: {
                     template: '<span>${field.length}</span>'

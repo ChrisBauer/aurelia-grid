@@ -1,12 +1,18 @@
 import {ViewCompiler, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
 import {CellRenderer} from 'grid/cell-renderer';
+import {Draggable} from 'grid/draggable';
 import {Utils} from 'grid/utils';
 // import {Compiler} from 'gooy/aurelia-compiler';
 
 
-const ASC = -1;
-const DESC = 1;
+const ASC = 'sort-asc';
+const DESC = 'sort-desc';
 const DEFAULT_CELL_TEMPLATE = '<span>${row[cell.field]}</span>';
+const DEFAULT_SORT_BY = function (field) {
+    return function (a, b) {
+        return a[field] > b[field] ? 1 : a[field] === b[field] ? 0 : -1;
+    };
+}
 
 @inject(Element, CellRenderer, ObserverLocator)
 @bindable('config')
@@ -20,6 +26,7 @@ export class AureliaGrid {
         this.element = Element;
         this.ObserverLocator = ObserverLocator;
         this.CellRenderer = CellRenderer;
+        this.Draggable = new Draggable(this.element, this.dropCallback.bind(this));
 
         this.nextRowIndex = 0;
         this.cellLookup = {};
@@ -32,13 +39,15 @@ export class AureliaGrid {
 
         for(let header of this.model.headers) {
             if (header.index !== sortHeader.index) {
-                delete header.sort;
+                header.sort = null;
             }
         }
 
-        this.model.rows = this.model.rows.sort(function (a, b) {
-            return a[field] > b[field] ? 1 : -1;
-        });
+        this.model.rows = this.model.rows.sort(sortHeader.sortBy ? sortHeader.sortBy:
+            function (a, b) {
+                return a[field] > b[field] ? 1 : -1;
+            }
+        );
 
         sortHeader.sort === ASC ?
             sortHeader.sort = DESC :
@@ -58,12 +67,22 @@ export class AureliaGrid {
     }
 
     createHeader (configEntry, index) {
-        return Utils.merge({
+        var header = Utils.merge({
             index: index,
             title: configEntry.field.toUpperCase(),
             field: configEntry.field,
-            sortBy: configEntry.field
+            sortBy: DEFAULT_SORT_BY(configEntry.field)
         }, configEntry.header);
+
+        if (configEntry.header && configEntry.header.sortBy) {
+            if (typeof configEntry.header.sortBy === 'string') {
+                header.sortBy = DEFAULT_SORT_BY(configEntry.header.sortBy)
+            }
+            else if (typeof configEntry.header.sortBy === 'function') {
+                header.sortBy = configEntry.header.sortBy;
+            }
+        }
+        return header;
     }
 
     initRow(row) {
@@ -96,6 +115,26 @@ export class AureliaGrid {
         }
     }
 
+    dropCallback(move, to) {
+        var moveHeader = this.model.headers.filter((header) => header.index == move)[0];
+        var moveCell = this.model.cells.filter((cell) => cell.index == move)[0];
+        var movePos = this.model.headers.indexOf(moveHeader);
+
+        var toHeader = this.model.headers.filter((header) => header.index == to)[0];
+        var toPos = this.model.headers.indexOf(toHeader);
+
+        this.model.headers.splice(movePos, 1);
+        this.model.cells.splice(movePos, 1);
+
+        this.model.headers.splice(toPos, 0, moveHeader);
+        this.model.cells.splice(toPos, 0, moveCell);
+
+        // make sure this runs after Aurelia re-orders the DOM
+        setTimeout(() => {
+            this.Draggable.setupDraggables(moveHeader.index);
+        });
+    }
+
     attached () {
         this.model = {
             headers: [],
@@ -113,29 +152,6 @@ export class AureliaGrid {
         }
         this.model.rows = this.dataModel;
 
-        // this attached() gets called before the repeat.for, so it would normally
-        // be the second callback. Since we want to generate the key data first,
-        // we need to have this be the first callback run. Since Aurelia runs
-        // the callbacks in the reverse order of subscription, we need to
-        // have a timeout to make sure that it is the last subscription
-        setTimeout( () => {
-            var self = this;
-            this.ObserverLocator.getArrayObserver(this.model.rows)
-            .subscribe((splices) => {
-                if (this.inSort) {
-                    this.sortSpliceCount = 0;
-                    this.spliceMap = this.generateSpliceMap(splices);
-                }
-                else {
-                    for(let splice of splices) {
-                        var addedCount = splice.addedCount
-                        while (addedCount-- > 0) {
-                            self.initRow(self.model.rows[splice.index + addedCount]);
-                        }
-                    }
-                }
-            });
-        });
         this.ObserverLocator.getArrayObserver(this.model.rows)
         .subscribe(() => {
             if (this.inSort) {
@@ -144,19 +160,46 @@ export class AureliaGrid {
                 this.spliceMap = null
             }
         });
+
+        setTimeout( () => {
+            this.afterAttached();
+        });
+    }
+
+    // this attached() gets called before the repeat.for, so it would normally
+    // be the second callback. Since we want to generate the key data first,
+    // we need to have this be the first callback run. Since Aurelia runs
+    // the callbacks in the reverse order of subscription, we need to
+    // have a timeout to make sure that it is the last subscription
+    afterAttached() {
+        var self = this;
+        this.ObserverLocator.getArrayObserver(this.model.rows)
+        .subscribe((splices) => {
+            if (this.inSort) {
+                this.sortSpliceCount = 0;
+                this.spliceMap = this.generateSpliceMap(splices);
+            }
+            else {
+                for(let splice of splices) {
+                    var addedCount = splice.addedCount
+                    while (addedCount-- > 0) {
+                        self.initRow(self.model.rows[splice.index + addedCount]);
+                    }
+                }
+            }
+        });
+
+        this.Draggable.setupDraggables();
     }
 
     generateSpliceMap(splices) {
         var map = [];
+        splices.map
         for (let splice of splices) {
             for (var i = 0; i < splice.addedCount; i++){
                 map.push(splice.index + i);
             }
         }
         return map;
-    }
-
-    dataModelChanged () {
-        console.log(arguments);
     }
 }
