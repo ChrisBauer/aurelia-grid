@@ -3,6 +3,7 @@ export class Home {
         this.sampleConfig = [
             {
                 field: 'name',
+                width: 120,
                 header: {
                     title: 'Name'
                 }
@@ -24,7 +25,7 @@ export class Home {
                     draggable: true
                 },
                 cell: {
-                    template: '<span>${field.length}</span>'
+                    template: '<span>${field.join(",")}</span>'
                 }
             }
         ]

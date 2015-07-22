@@ -1,12 +1,11 @@
 import {ViewCompiler, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
 import {CellRenderer} from 'grid/cell-renderer';
 import {Draggable} from 'grid/draggable';
+import {GridSorter} from 'grid/grid-sorter';
 import {Utils} from 'grid/utils';
 // import {Compiler} from 'gooy/aurelia-compiler';
 
 
-const ASC = 'sort-asc';
-const DESC = 'sort-desc';
 const DEFAULT_CELL_TEMPLATE = '<span>${row[cell.field]}</span>';
 const DEFAULT_SORT_BY = function (field) {
     return function (a, b) {
@@ -27,6 +26,10 @@ export class AureliaGrid {
         this.ObserverLocator = ObserverLocator;
         this.CellRenderer = CellRenderer;
         this.Draggable = new Draggable(this.element, this.dropCallback.bind(this));
+        this.changeHandlers = {
+            before: [],
+            after: []
+        };
 
         this.nextRowIndex = 0;
         this.cellLookup = {};
@@ -34,28 +37,7 @@ export class AureliaGrid {
 
     sort (sortHeader) {
         this.inSort = true;
-        let index = sortHeader.index;
-        let field = sortHeader.field;
-
-        for(let header of this.model.headers) {
-            if (header.index !== sortHeader.index) {
-                header.sort = null;
-            }
-        }
-
-        this.model.rows = this.model.rows.sort(sortHeader.sortBy ? sortHeader.sortBy:
-            function (a, b) {
-                return a[field] > b[field] ? 1 : -1;
-            }
-        );
-
-        sortHeader.sort === ASC ?
-            sortHeader.sort = DESC :
-            sortHeader.sort = ASC;
-
-        if (sortHeader.sort === DESC) {
-            this.model.rows.reverse();
-        }
+        this.GridSorter.sort(sortHeader);
     }
 
     createCell (configEntry, index) {
@@ -71,6 +53,7 @@ export class AureliaGrid {
             index: index,
             title: configEntry.field.toUpperCase(),
             field: configEntry.field,
+            width: configEntry.width,
             sortBy: DEFAULT_SORT_BY(configEntry.field)
         }, configEntry.header);
 
@@ -151,13 +134,21 @@ export class AureliaGrid {
             this.initRow(row);
         }
         this.model.rows = this.dataModel;
+        this.GridSorter = new GridSorter(this.model);
 
+        var self = this;
         this.ObserverLocator.getArrayObserver(this.model.rows)
         .subscribe(() => {
-            if (this.inSort) {
-                this.sortSpliceCount = 0;
-                this.inSort = false;
-                this.spliceMap = null
+            // clean up sort if necessary
+            if (self.inSort) {
+                self.sortSpliceCount = 0;
+                self.inSort = false;
+                self.spliceMap = null
+            }
+            // otherwise, set sort flag and apply sort to new data
+            else {
+                self.inSort = true;
+                self.GridSorter.applySortHistory();
             }
         });
 
@@ -175,9 +166,9 @@ export class AureliaGrid {
         var self = this;
         this.ObserverLocator.getArrayObserver(this.model.rows)
         .subscribe((splices) => {
-            if (this.inSort) {
-                this.sortSpliceCount = 0;
-                this.spliceMap = this.generateSpliceMap(splices);
+            if (self.inSort) {
+                self.sortSpliceCount = 0;
+                self.spliceMap = this.generateSpliceMap(splices);
             }
             else {
                 for(let splice of splices) {
@@ -190,6 +181,11 @@ export class AureliaGrid {
         });
 
         this.Draggable.setupDraggables();
+    }
+
+    registerChangeHandler (handler) {
+        // handler.when is 'before' or 'after';
+        this.changeHandlers[handler.when].push(handler.callback);
     }
 
     generateSpliceMap(splices) {

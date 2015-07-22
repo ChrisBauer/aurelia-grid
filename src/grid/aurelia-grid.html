@@ -6,7 +6,8 @@
                 innerHTML.bind="header.title"
                 click.delegate="$parent.sort(header)"
                 class="${'col-' + header.index}"
-                class.bind="header.sort">
+                class.bind="header.sort"
+                style.bind="{width: header.width + 'px'}">
             </th>
         </thead>
         <tbody>
