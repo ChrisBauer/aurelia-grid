@@ -5,15 +5,14 @@
                 draggable.bind="header.draggable"
                 innerHTML.bind="header.title"
                 click.delegate="$parent.sort(header)"
-                class="${'col-' + header.index}"
-                class.bind="header.sort"
+                class="${'col-' + header.index} ${header.colClass} ${header.sort}"
                 style.bind="{width: header.width + 'px'}">
             </th>
         </thead>
         <tbody>
             <tr repeat.for="row of model.rows">
                 <td repeat.for="cell of $parent.model.cells"
-                    class.bind="'col-' + cell.index"
+                    class="${cell.colClass} ${'col-' + cell.index}"
                     innerHTML.bind="$parent.$parent.getCell(cell, $parent.row)">
                 </td>
             </tr>

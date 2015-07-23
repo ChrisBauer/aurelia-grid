@@ -44,7 +44,8 @@ export class AureliaGrid {
         return Utils.merge({
             index: index,
             field: configEntry.field,
-            template: DEFAULT_CELL_TEMPLATE
+            template: DEFAULT_CELL_TEMPLATE,
+            colClass: configEntry.colClass
         }, configEntry.cell)
     }
 
@@ -54,6 +55,7 @@ export class AureliaGrid {
             title: configEntry.field.toUpperCase(),
             field: configEntry.field,
             width: configEntry.width,
+            colClass: configEntry.colClass,
             sortBy: DEFAULT_SORT_BY(configEntry.field)
         }, configEntry.header);
 
@@ -137,8 +139,9 @@ export class AureliaGrid {
         this.GridSorter = new GridSorter(this.model);
 
         var self = this;
-        this.ObserverLocator.getArrayObserver(this.model.rows)
-        .subscribe(() => {
+        this.rowObserver = this.ObserverLocator.getArrayObserver(this.model.rows);
+
+        this.rowObserver.subscribe(() => {
             // clean up sort if necessary
             if (self.inSort) {
                 self.sortSpliceCount = 0;
@@ -150,6 +153,7 @@ export class AureliaGrid {
                 self.inSort = true;
                 self.GridSorter.applySortHistory();
             }
+            this.Draggable.handleRowChanges();
         });
 
         setTimeout( () => {
@@ -164,8 +168,7 @@ export class AureliaGrid {
     // have a timeout to make sure that it is the last subscription
     afterAttached() {
         var self = this;
-        this.ObserverLocator.getArrayObserver(this.model.rows)
-        .subscribe((splices) => {
+        this.rowObserver.subscribe((splices) => {
             if (self.inSort) {
                 self.sortSpliceCount = 0;
                 self.spliceMap = this.generateSpliceMap(splices);

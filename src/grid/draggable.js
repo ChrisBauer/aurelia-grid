@@ -10,6 +10,7 @@ export class Draggable {
     constructor (Element, dropCallback) {
         this.element = Element;
         this.dropCallback = dropCallback;
+        this.dragInProgress = false;
     }
 
     setupDraggables(index) {
@@ -46,14 +47,39 @@ export class Draggable {
         return Array.prototype.indexOf.call(el.parentNode.childNodes, el);
     }
 
+    handleRowChanges () {
+        if (this.dragInProgress) {
+            this.applyDropTargetClass();
+            this.applyDragClass();
+        }
+    }
+
+    applyDragClass (target) {
+        target = target || this.element.querySelector('.' + this.dragColClass);
+        this.forColElements(target, (el) => el.style.opacity = 0.4);
+    }
+
+    applyDropTargetClass (target) {
+        target = target || this.element.querySelector('.' + this.dropColClass);
+
+        var dropPos = this.getSiblingIndex(target);
+        var dragStartPos = this.dragStartPos;
+
+        this.forColElements(target, (el) => el.classList.add(DRAGOVER,
+            dragStartPos > dropPos ? LEFT : RIGHT
+        ));
+    }
+
     dragstart (e) {
+        this.dragInProgress = true;
         this.dragColClass = this.getColClass(e.target);
         this.dragStartPos = this.getSiblingIndex(e.target);
         e.dataTransfer.setData('text', '' + this.dragColClass.split('-')[1]);
-        this.forColElements(e.target, (el) => el.style.opacity = 0.4);
+        this.applyDragClass(e.target);
     }
 
     dragend (e) {
+        this.dragInProgress = false;
         this.dragColClass = null;
         this.forColElements(e.target, (el) => el.style.opacity = 1);
     }
@@ -62,12 +88,7 @@ export class Draggable {
         var colClass = this.getColClass(e.target);
         if (colClass !== this.dragColClass) {
             this.dropColClass = colClass;
-            var dropPos = this.getSiblingIndex(e.target);
-            var dragStartPos = this.dragStartPos;
-
-            this.forColElements(e.target, (el) => el.classList.add(DRAGOVER,
-                dragStartPos > dropPos ? LEFT : RIGHT
-            ));
+            this.applyDropTargetClass(e.target);
         }
     }
 

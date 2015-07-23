@@ -4,6 +4,7 @@ export class Home {
             {
                 field: 'name',
                 width: 120,
+                colClass: 'first',
                 header: {
                     title: 'Name'
                 }
