@@ -101,23 +101,30 @@ export class AureliaGrid {
     }
 
     dropCallback(move, to) {
-        var moveHeader = this.model.headers.filter((header) => header.index == move)[0];
-        var moveCell = this.model.cells.filter((cell) => cell.index == move)[0];
-        var movePos = this.model.headers.indexOf(moveHeader);
+        if (!this.dropInProgress) {
+            this.dropInProgress = true;
+            var moveHeader = this.model.headers.filter((header) => header.index == move)[0];
+            var moveCell = this.model.cells.filter((cell) => cell.index == move)[0];
+            var movePos = this.model.headers.indexOf(moveHeader);
 
-        var toHeader = this.model.headers.filter((header) => header.index == to)[0];
-        var toPos = this.model.headers.indexOf(toHeader);
+            var toHeader = this.model.headers.filter((header) => header.index == to)[0];
+            var toPos = this.model.headers.indexOf(toHeader);
 
-        this.model.headers.splice(movePos, 1);
-        this.model.cells.splice(movePos, 1);
+            this.model.headers.splice(movePos, 1);
+            this.model.cells.splice(movePos, 1);
 
-        this.model.headers.splice(toPos, 0, moveHeader);
-        this.model.cells.splice(toPos, 0, moveCell);
+            this.model.headers.splice(toPos, 0, moveHeader);
+            this.model.cells.splice(toPos, 0, moveCell);
 
-        // make sure this runs after Aurelia re-orders the DOM
-        setTimeout(() => {
-            this.Draggable.setupDraggables(moveHeader.index);
-        });
+            // make sure this runs after Aurelia re-orders the DOM
+            setTimeout(() => {
+                this.Draggable.setupDraggables(moveHeader.index);
+                this.dropInProgress = false;
+            });
+        }
+        else {
+            this.dropInProgress = false;
+        }
     }
 
     attached () {
