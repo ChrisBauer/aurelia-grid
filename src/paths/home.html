@@ -1,6 +1,7 @@
 <template>
     <require from="grid/aurelia-grid"></require>
     <section>
+        <input value.bind="editable.name">
         <aurelia-grid config.bind="sampleConfig" data-model.bind="sampleData">
         </aurelia-grid>
     </section>

@@ -1,5 +1,11 @@
 export class Home {
     constructor (ViewCompiler, resources, Container) {
+        this.editable = {
+            name: 'Ed',
+            dob: '1987-06-05',
+            test: [1,2,3,6]
+        };
+
         this.sampleConfig = [
             {
                 field: 'name',
@@ -55,7 +61,8 @@ export class Home {
                 name: 'George',
                 dob: '1931-03-12',
                 test: [1,2,3,4,5,6]
-            }
+            },
+            this.editable
         ];
         setTimeout( () => {
             this.sampleData.push({

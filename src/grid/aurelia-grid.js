@@ -73,7 +73,20 @@ export class AureliaGrid {
     initRow(row) {
         row.key = this.nextRowIndex;
         this.cellLookup[this.nextRowIndex++] = {};
+        Array.observe(row, (changes) => {
+            console.log(changes);
+            if (changes.some((change) => change.type === 'update')) {
+                this.renderRow(changes[0].object);
+            }
+        }.bind(this));
     }
+
+    renderRow(row) {
+        for (let cell of this.model.cells) {
+            this.cellLookup[row.key][cell.index] = this.CellRenderer.renderCell(cell, row);
+        }
+    }
+
 
     getCell(cell, row) {
         if (!this.inSort) {
