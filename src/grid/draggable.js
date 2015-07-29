@@ -102,14 +102,20 @@ export class Draggable {
 
     drop (e) {
         e.preventDefault();
-        var dropColClass = this.getColClass(e.target);
-        var move = e.dataTransfer.getData('text');
-        if (!dropColClass || !move) {
-            return;
+        if (!this.dropInProgress) {
+            this.dropInProgress = true;
+            var dropColClass = this.getColClass(e.target);
+            var move = e.dataTransfer.getData('text');
+            if (!dropColClass || !move) {
+                return;
+            }
+            this.dragleave(e);
+            var move = e.dataTransfer.getData('text');
+            var to = dropColClass.split('-')[1];
+            this.dropCallback(move, to);
         }
-        this.dragleave(e);
-        var move = e.dataTransfer.getData('text');
-        var to = dropColClass.split('-')[1];
-        this.dropCallback(move, to);
+        else {
+            setTimeout( () => this.dropInProgress = false; );
+        }
     }
 }
