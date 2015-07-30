@@ -13,11 +13,7 @@
             <tr repeat.for="row of model.rows">
                 <!--<td>${row.key}</td>-->
                 <td repeat.for="cell of $parent.model.cells"
-                    class="${cell.colClass} ${'col-' + cell.index}"
-                    data-index.bind="$parent.$index"
-                    ref.two-way="$parent.row.key"
-                    data-key.bind="$parent.row.key"
-                    innerHTML.bind="$parent.row.key + '-' + $parent.$parent.cellLookup[$parent.row.key][cell.index]">
+                    innerHTML.bind="$parent.$parent.cellLookup[$parent.row.key][cell.index]">
                 </td>
             </tr>
         </tbody>

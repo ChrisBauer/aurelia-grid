@@ -1,5 +1,4 @@
-import {ViewCompiler, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
-import {Repeat} from 'aurelia-templating-resources';
+import {ViewCompiler, View, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
 import {CellRenderer} from 'grid/cell-renderer';
 import {Draggable} from 'grid/draggable';
 import {GridSorter} from 'grid/grid-sorter';
@@ -13,6 +12,7 @@ const DEFAULT_SORT_BY = function (field) {
         return a[field] > b[field] ? 1 : a[field] === b[field] ? 0 : -1;
     };
 }
+const OVERRIDE = 'Fixes issue with Aurelia binding to the wrong execution context';
 
 @inject(Element, CellRenderer, ObserverLocator)
 @bindable('config')
@@ -23,6 +23,23 @@ const DEFAULT_SORT_BY = function (field) {
 export class AureliaGrid {
 
     constructor(Element, CellRenderer, ObserverLocator) {
+        // TODO: figure out a way to make this only apply to instances of the View
+        // created in cell-renderer.js
+        View.prototype.originalBind = View.prototype.bind;
+        View.prototype.bind = function (executionContext, systemUpdate){
+            if (this.executionContext && this.executionContext.cell &&
+                this.executionContext.cell.hasOwnProperty('specialKey') &&
+                executionContext && executionContext.row &&
+                executionContext.row.hasOwnProperty('specialKey') &&
+                this.executionContext.cell.specialKey === executionContext.row.specialKey
+            ) {
+                this.executionContext.$parent = executionContext;
+                View.prototype.originalBind.call(this, this.executionContext, systemUpdate);
+            }
+            else {
+                View.prototype.originalBind.call(this, executionContext, systemUpdate);
+            }
+        }
         this.element = Element;
         this.ObserverLocator = ObserverLocator;
         this.CellRenderer = CellRenderer;
@@ -33,7 +50,6 @@ export class AureliaGrid {
         };
 
         this.nextRowIndex = 0;
-        this.sortFixCount = 0;
         this.cellLookup = {};
     }
 
@@ -44,6 +60,7 @@ export class AureliaGrid {
 
     createCell (configEntry, index) {
         return Utils.merge({
+            specialKey: OVERRIDE,
             index: index,
             field: configEntry.field,
             template: DEFAULT_CELL_TEMPLATE,
@@ -73,9 +90,11 @@ export class AureliaGrid {
     }
 
     initRow(row) {
+        row.specialKey = OVERRIDE;
         row.key = this.nextRowIndex;
         this.cellLookup[this.nextRowIndex++] = {};
         Array.observe(row, (changes) => {
+            console.log(changes);
             if (changes.some((change) => change.type === 'update')) {
                 this.renderRow(changes[0].object);
             }
@@ -89,32 +108,6 @@ export class AureliaGrid {
         }
     }
 
-    // TODO: look at repeat.js line 305 after grid appears to be sorted correctly
-    // aurelia-binding line 797
-    // getCell(cell, row) {
-    //     if (!this.inSort) {
-    //         var lookup = this.cellLookup[row.key][cell.index];
-    //         // if (lookup) {
-    //             return lookup;
-    //         // }
-    //         // else {
-    //         //     this.cellLookup[row.key][cell.index] = this.CellRenderer.renderCell(cell, row);
-    //         //     return this.cellLookup[row.key][cell.index];
-    //         // }
-    //     }
-    //     else {
-    //         var round = Math.floor(this.sortSpliceCount++ / this.model.cells.length);
-    //         row = this.model.rows[this.spliceMap[round]];
-    //         var lookup = this.cellLookup[row.key][cell.index];
-    //         if (lookup) {
-    //             return lookup;
-    //         }
-    //         else {
-    //             this.renderRow(row);
-    //             return this.cellLookup[row.key][cell.index];
-    //         }
-    //     }
-    // }
 
     dropCallback(move, to) {
         if (!this.dropInProgress) {
@@ -166,36 +159,10 @@ export class AureliaGrid {
 
         this.rowObserver.subscribe(() => {
             // clean up sort if necessary
-            if (self.sortFixCount > 0) {
-                if (--self.sortFixCount === 0) {
-                    self.postSortFix = true;
-                    console.log(self.model.rows);
-                    self.GridSorter.applySortHistory();
-                    self.inSort = true;
-                }
-                return;
-            }
-            else if (self.inSort) {
+            if (self.inSort) {
+                self.sortSpliceCount = 0;
                 self.inSort = false;
-                if (!self.postSortFix) {
-                    console.log(self.cellLookup);
-                    Array.prototype.filter.call(
-                        self.element.querySelectorAll('tbody>tr'), (rowEl, i) => {
-                            return rowEl.children.length > 0 && parseInt(rowEl.children[0].dataset.key) !== self.order[i]
-                        }, self)
-                        .map(rowEl => parseInt(rowEl.children[0].dataset.index))
-                        .forEach((position, i, incorrectRows) => {
-                            self.sortFixCount = 1;
-                            var row = self.model.rows.splice(position - i, 1)[0];
-                            delete self.cellLookup[self.order[position]];
-                            self.model.rows.push(row);
-                            self.initRow(row);
-                        });
-                }
-                else {
-                    self.postSortFix = false;
-                }
-
+                self.spliceMap = null
             }
             // otherwise, set sort flag and apply sort to new data
             else {
@@ -218,10 +185,11 @@ export class AureliaGrid {
     afterAttached() {
         var self = this;
         this.rowObserver.subscribe((splices) => {
-            self.order = self.model.rows.map(row => row.key);
             if (self.inSort) {
+                self.sortSpliceCount = 0;
+                self.spliceMap = this.generateSpliceMap(splices);
             }
-            else if (self.sortFixCount < 1) {
+            else {
                 for(let splice of splices) {
                     var addedCount = splice.addedCount
                     while (addedCount-- > 0) {
@@ -239,14 +207,14 @@ export class AureliaGrid {
         this.changeHandlers[handler.when].push(handler.callback);
     }
 
-    // generateSpliceMap(splices) {
-    //     var map = [];
-    //     splices.map
-    //     for (let splice of splices) {
-    //         for (var i = 0; i < splice.addedCount; i++){
-    //             map.push(splice.index + i);
-    //         }
-    //     }
-    //     return map;
-    // }
+    generateSpliceMap(splices) {
+        var map = [];
+        splices.map
+        for (let splice of splices) {
+            for (var i = 0; i < splice.addedCount; i++){
+                map.push(splice.index + i);
+            }
+        }
+        return map;
+    }
 }
