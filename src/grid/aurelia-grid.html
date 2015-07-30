@@ -11,7 +11,6 @@
         </thead>
         <tbody>
             <tr repeat.for="row of model.rows">
-                <!--<td>${row.key}</td>-->
                 <td repeat.for="cell of $parent.model.cells"
                     class="${cell.colClass} ${'col-' + cell.index}"
                     innerHTML.bind="$parent.$parent.cellLookup[$parent.row.key][cell.index]">

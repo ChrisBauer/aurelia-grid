@@ -160,9 +160,7 @@ export class AureliaGrid {
         this.rowObserver.subscribe(() => {
             // clean up sort if necessary
             if (self.inSort) {
-                self.sortSpliceCount = 0;
                 self.inSort = false;
-                self.spliceMap = null
             }
             // otherwise, set sort flag and apply sort to new data
             else {
@@ -185,11 +183,7 @@ export class AureliaGrid {
     afterAttached() {
         var self = this;
         this.rowObserver.subscribe((splices) => {
-            if (self.inSort) {
-                self.sortSpliceCount = 0;
-                self.spliceMap = this.generateSpliceMap(splices);
-            }
-            else {
+            if (!self.inSort) {
                 for(let splice of splices) {
                     var addedCount = splice.addedCount
                     while (addedCount-- > 0) {
@@ -200,21 +194,5 @@ export class AureliaGrid {
         });
 
         this.Draggable.setupDraggables();
-    }
-
-    registerChangeHandler (handler) {
-        // handler.when is 'before' or 'after';
-        this.changeHandlers[handler.when].push(handler.callback);
-    }
-
-    generateSpliceMap(splices) {
-        var map = [];
-        splices.map
-        for (let splice of splices) {
-            for (var i = 0; i < splice.addedCount; i++){
-                map.push(splice.index + i);
-            }
-        }
-        return map;
     }
 }
