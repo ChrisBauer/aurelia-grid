@@ -24,9 +24,9 @@ export class CellRenderer {
         var html;
 
         // if the user provided an string containing HTML Element(s)
-        if (view.fragment.children.length > 1) {
+        if (view.fragment.children.length > 0) {
             return Array.prototype.map.call(view.fragment.children,
-                child => child.innerHTML).join('');
+                child => child.outerHTML).join('');
         }
         // if the user provided just a binding string
         else {
