@@ -26,9 +26,7 @@ export class Home {
                 field: 'test',
                 header: {
                     title: 'Test',
-                    sortBy: function (a, b) {
-                        return a.test.length > b.test.length;
-                    },
+                    sortBy: (a, b) => a.test.length - b.test.length,
                     draggable: true
                 },
                 cell: {

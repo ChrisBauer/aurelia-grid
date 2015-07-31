@@ -6,7 +6,7 @@ import {Utils} from 'grid/utils';
 // import {Compiler} from 'gooy/aurelia-compiler';
 
 
-const DEFAULT_CELL_TEMPLATE = '<span>${row[cell.field]}</span>';
+const DEFAULT_CELL_TEMPLATE = '<span>${field}</span>';
 const DEFAULT_SORT_BY = function (field) {
     return function (a, b) {
         return a[field] > b[field] ? 1 : a[field] === b[field] ? 0 : -1;
@@ -71,7 +71,7 @@ export class AureliaGrid {
     createHeader (configEntry, index) {
         var header = Utils.merge({
             index: index,
-            title: configEntry.field.toUpperCase(),
+            title: configEntry.field.substring(0, 1).toUpperCase() + configEntry.field.substring(1),
             field: configEntry.field,
             width: configEntry.width,
             colClass: configEntry.colClass,
