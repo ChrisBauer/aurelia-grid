@@ -1,6 +1,6 @@
 import {inject, ViewResources, ViewCompiler, ResourceRegistry, Container} from 'aurelia-framework';
 
-@inject(ViewCompiler, ResourceRegistry, Container)
+@inject(ViewCompiler, ViewResources, Container)
 export class CellRenderer {
     constructor (ViewCompiler, resources, Container) {
 
