@@ -26,18 +26,18 @@ export class AureliaGrid {
         // TODO: figure out a way to make this only apply to instances of the View
         // created in cell-renderer.js
         View.prototype.originalBind = View.prototype.bind;
-        View.prototype.bind = function (executionContext, systemUpdate){
-            if (this.executionContext && this.executionContext.cell &&
-                this.executionContext.cell.hasOwnProperty('specialKey') &&
-                executionContext && executionContext.row &&
-                executionContext.row.hasOwnProperty('specialKey') &&
-                this.executionContext.cell.specialKey === executionContext.row.specialKey
+        View.prototype.bind = function (bindingContext, systemUpdate){
+            if (this.bindingContext && this.bindingContext.cell &&
+                this.bindingContext.cell.hasOwnProperty('specialKey') &&
+                bindingContext && bindingContext.row &&
+                bindingContext.row.hasOwnProperty('specialKey') &&
+                this.bindingContext.cell.specialKey === bindingContext.row.specialKey
             ) {
-                this.executionContext.$parent = executionContext;
-                View.prototype.originalBind.call(this, this.executionContext, systemUpdate);
+                this.bindingContext.$parent = bindingContext;
+                View.prototype.originalBind.call(this, this.bindingContext, systemUpdate);
             }
             else {
-                View.prototype.originalBind.call(this, executionContext, systemUpdate);
+                View.prototype.originalBind.call(this, bindingContext, systemUpdate);
             }
         }
         this.element = Element;
