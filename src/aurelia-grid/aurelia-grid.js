@@ -1,9 +1,8 @@
 import {ViewCompiler, View, ViewResources, ResourceRegistry, Container, ObserverLocator, inject, bindable} from 'aurelia-framework';
-import {CellRenderer} from 'grid/cell-renderer';
-import {Draggable} from 'grid/draggable';
-import {GridSorter} from 'grid/grid-sorter';
-import {Utils} from 'grid/utils';
-// import {Compiler} from 'gooy/aurelia-compiler';
+import {CellRenderer} from 'aurelia-grid/cell-renderer';
+import {Draggable} from 'aurelia-grid/draggable';
+import {GridSorter} from 'aurelia-grid/grid-sorter';
+import {Utils} from 'aurelia-grid/utils';
 
 
 const DEFAULT_CELL_TEMPLATE = '<span>${field}</span>';

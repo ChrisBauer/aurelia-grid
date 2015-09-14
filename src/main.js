@@ -1,7 +1,8 @@
 export function configure(aurelia) {
     aurelia.use
         .standardConfiguration()
-        .developmentLogging();
+        .developmentLogging()
+        .feature('aurelia-grid');
 
     aurelia.start().then(main => main.setRoot());
 }
