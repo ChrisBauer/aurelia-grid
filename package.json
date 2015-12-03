@@ -1,22 +1,21 @@
 {
-  "name": "aurelia-skeleton-navigation",
-  "version": "1.0.0-beta.1.0.1",
-  "description": "A starter kit for building a standard navigation-style app with Aurelia.",
+  "name": "aurelia-grid",
+  "version": "0.1.0",
+  "description": "author simple but powerful grid for aurelia",
   "keywords": [
     "aurelia",
-    "navigation",
-    "skeleton"
+    "grid"
   ],
-  "homepage": "http://aurelia.io",
+  "homepage": "https://github.com/ChrisBauer/aurelia-grid",
   "bugs": {
-    "url": "https://github.com/aurelia/skeleton-navigation/issues"
+    "url": "https://github.com/ChrisBauer/aurelia-grid/issues"
   },
-  "license": "CC0-1.0",
-  "author": "Rob Eisenberg <rob@bluespire.com> (http://robeisenberg.com/)",
+  "license": "MIT",
+  "author": "Chris Bauer <cbauer@outlook.com> (https://github.com/ChrisBauer)",
   "main": "dist/main.js",
   "repository": {
     "type": "git",
-    "url": "http://github.com/aurelia/skeleton-navigation"
+    "url": "http://github.com/aurelia-grid"
   },
   "scripts": {
     "test": "gulp test",

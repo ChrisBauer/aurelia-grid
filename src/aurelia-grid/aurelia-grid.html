@@ -1,0 +1,21 @@
+<template>
+    <table class="au-grid">
+        <thead>
+            <th repeat.for="header of model.headers"
+                draggable.bind="header.draggable"
+                innerHTML.bind="header.title"
+                click.delegate="$parent.sort(header)"
+                class="${'col-' + header.index} ${header.colClass} ${header.sort}"
+                style.bind="{width: header.width + 'px'}">
+            </th>
+        </thead>
+        <tbody>
+            <tr repeat.for="row of model.rows">
+                <td repeat.for="cell of $parent.model.cells"
+                    class="${cell.colClass} ${'col-' + cell.index}"
+                    innerHTML.bind="$parent.$parent.cellLookup[$parent.row.key][cell.index]">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</template>

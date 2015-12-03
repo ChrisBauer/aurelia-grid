@@ -1,0 +1,35 @@
+.au-grid {
+    border-collapse: collapse;
+
+    th {
+        user-select: none;
+        cursor: pointer;
+
+        &.sort-asc {
+
+            &:after {
+                content: '\25B4';
+                display:inline-block;
+            }
+        }
+
+        &.sort-desc {
+
+            &:after {
+                content: '\25B4';
+                transform: rotate(180deg);
+                display:inline-block;
+            }
+        }
+    }
+
+    .dragover {
+        &.right {
+            border-right: 1px solid gray;
+        }
+        &.left {
+            border-left: 1px solid gray;
+        }
+
+    }
+}

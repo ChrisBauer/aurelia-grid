@@ -4,11 +4,11 @@ bower_components
 .idea
 .DS_STORE
 dist
-build
 coverage
 .editorconfig
 .eslintrc
 CONTRIBUTING.md
 src_o
-build_n
 styles
+doc
+test
