@@ -5,13 +5,12 @@ import {GridSorter} from 'aurelia-grid/grid-sorter';
 import {Utils} from 'aurelia-grid/utils';
 
 
-const DEFAULT_CELL_TEMPLATE = '<span>${field}</span>';
+const DEFAULT_CELL_TEMPLATE = '<template><span>${field}</span></template>';
 const DEFAULT_SORT_BY = function (field) {
     return function (a, b) {
         return a[field] > b[field] ? 1 : a[field] === b[field] ? 0 : -1;
     };
 }
-const OVERRIDE = 'Fixes issue with Aurelia binding to the wrong execution context';
 
 @inject(Element, CellRenderer, ObserverLocator)
 @bindable('config')
@@ -22,23 +21,6 @@ const OVERRIDE = 'Fixes issue with Aurelia binding to the wrong execution contex
 export class AureliaGrid {
 
     constructor(Element, CellRenderer, ObserverLocator) {
-        // TODO: figure out a way to make this only apply to instances of the View
-        // created in cell-renderer.js
-        View.prototype.originalBind = View.prototype.bind;
-        View.prototype.bind = function (bindingContext, systemUpdate){
-            if (this.bindingContext && this.bindingContext.cell &&
-                this.bindingContext.cell.hasOwnProperty('specialKey') &&
-                bindingContext && bindingContext.row &&
-                bindingContext.row.hasOwnProperty('specialKey') &&
-                this.bindingContext.cell.specialKey === bindingContext.row.specialKey
-            ) {
-                this.bindingContext.$parent = bindingContext;
-                View.prototype.originalBind.call(this, this.bindingContext, systemUpdate);
-            }
-            else {
-                View.prototype.originalBind.call(this, bindingContext, systemUpdate);
-            }
-        }
         this.element = Element;
         this.ObserverLocator = ObserverLocator;
         this.CellRenderer = CellRenderer;
@@ -59,7 +41,6 @@ export class AureliaGrid {
 
     createCell (configEntry, index) {
         return Utils.merge({
-            specialKey: OVERRIDE,
             index: index,
             field: configEntry.field,
             template: DEFAULT_CELL_TEMPLATE,
@@ -89,11 +70,10 @@ export class AureliaGrid {
     }
 
     initRow(row) {
-        row.specialKey = OVERRIDE;
         row.key = this.nextRowIndex;
         this.cellLookup[this.nextRowIndex++] = {};
         Array.observe(row, (changes) => {
-            console.log(changes);
+            // console.log(changes);
             if (changes.some((change) => change.type === 'update')) {
                 this.renderRow(changes[0].object);
             }

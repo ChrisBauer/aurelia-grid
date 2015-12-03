@@ -62,18 +62,18 @@ export class Home {
             },
             this.editable
         ];
-        setTimeout( () => {
-            this.sampleData.push({
-                name: 'Riley',
-                dob: '1992-10-30',
-                test: [1,2,3,4]
-            });
-            this.sampleData.push({
-                name: 'Amy',
-                dob: '1960-10-06',
-                test: [1,2,3,5,6]
-            });
-        }, 3000);
+        // setTimeout( () => {
+        //     this.sampleData.push({
+        //         name: 'Riley',
+        //         dob: '1992-10-30',
+        //         test: [1,2,3,4]
+        //     });
+        //     this.sampleData.push({
+        //         name: 'Amy',
+        //         dob: '1960-10-06',
+        //         test: [1,2,3,5,6]
+        //     });
+        // }, 3000);
     }
     attached () {
         var el = '<div>${text}</div>';
