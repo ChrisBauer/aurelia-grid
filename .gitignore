@@ -9,3 +9,6 @@ coverage
 .editorconfig
 .eslintrc
 CONTRIBUTING.md
+src_o
+build_n
+styles
